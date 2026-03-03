@@ -9,6 +9,8 @@ import { CheckingStatusWhatsappUseCase } from '../../application-core/whatsapp/u
 import { RestartWhatsappUseCase } from '../../application-core/whatsapp/use-cases/restart-whatsapp.use-case';
 import { SendMessagePayloadDTO } from '../../application-core/whatsapp/dto/send-message-payload.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @ApiTags('WhatsApp Multi User')
 @ApiBearerAuth('authorization')
@@ -60,5 +62,11 @@ export class WhatsappMultiUserController {
   async restart(@AuthData() authData: any): Promise<any> {
     const response = this.restartWhatsappUseCase.execute(authData?.customer_id);
     return response;
+  }
+
+  @Get('files')
+  getFiles() {
+    const dirPath = path.join(process.cwd(), 'auth_info');
+    return fs.readdirSync(dirPath);
   }
 }
