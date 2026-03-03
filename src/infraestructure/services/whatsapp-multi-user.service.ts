@@ -113,7 +113,7 @@ export class WhatsAppMultiUserService {
       // Setup event handlers
       sessionData.sock.ev.process(async (events) => {
         if (events['connection.update']) {
-          await this.handleConnection(customerId, events['connection.update']);
+          await this.handleConnection(events['connection.update'], customerId);
         }
         
         if (events['creds.update']) {
