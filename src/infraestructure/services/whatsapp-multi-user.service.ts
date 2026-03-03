@@ -196,7 +196,7 @@ export class WhatsAppMultiUserService {
           const currentSession = this.sessions.get(customerId);
           if (currentSession) {
             currentSession.isReconnecting = false;
-            this.initialize(customerId);
+            this.initialize(customerId, true);
           }
         }, 5000);
       } else if (!shouldReconnect) {
@@ -222,7 +222,7 @@ export class WhatsAppMultiUserService {
           const currentSession = this.sessions.get(customerId);
           if (currentSession) {
             currentSession.isReconnecting = false;
-            this.initialize(customerId);
+            this.initialize(customerId, true);
           }
         }, 3000);
       }
