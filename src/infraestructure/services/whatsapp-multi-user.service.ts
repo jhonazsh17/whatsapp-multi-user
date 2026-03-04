@@ -46,6 +46,7 @@ export class WhatsAppMultiUserService {
     if (this.sessions.has(customerId)) {
       const sessionData = this.sessions.get(customerId);
       if (sessionData?.isInitializing) {
+        this.logger.warn(`⚠️ [${customerId}] Session already initializing, skipping...`);
         return {
           status: 'warning',
           message: `Session ${customerId} is already initializing`
@@ -53,15 +54,22 @@ export class WhatsAppMultiUserService {
       }
     }
 
+    this.logger.log(`🔄 [${customerId}] Initializing session...`);
+
     // If useExistingSession is true, check if session exists and load its data
     if (useExistingSession) {
+      this.logger.log(`🔍 [${customerId}] Checking for existing session...`);
       const existingSession = await this.getSessionByCustomerId(customerId);
       if (!existingSession) {
+        this.logger.warn(`❌ [${customerId}] No existing session found`);
         return {
           status: 'error',
           message: `No existing session found for ${customerId}`
         };
       }
+      this.logger.log(`✅ [${customerId}] Existing session found: ${existingSession.fileName}`);
+    } else {
+      this.logger.log(`🆕 [${customerId}] Creating new session...`);
     }
 
     // Create or get session data
@@ -195,8 +203,25 @@ export class WhatsAppMultiUserService {
         setTimeout(() => {
           const currentSession = this.sessions.get(customerId);
           if (currentSession) {
+            // Reset initialization state before reconnecting
             currentSession.isReconnecting = false;
-            this.initialize(customerId, true);
+            currentSession.isInitializing = false;
+            this.logger.log(`🔄 [${customerId}] Reset initialization state for reconnection...`);
+            
+            // Check if we have a complete session before using existing session
+            this.getSessionByCustomerId(customerId).then(existingSession => {
+              this.logger.log(`🔍 [${customerId}] Existing session check: ${existingSession ? 'FOUND' : 'NOT FOUND'}`);
+              if (existingSession) {
+                this.logger.log(`🔄 [${customerId}] Reconnecting with existing session...`);
+                this.initialize(customerId, true);
+              } else {
+                this.logger.log(`🔄 [${customerId}] Reconnecting without existing session...`);
+                this.initialize(customerId, false);
+              }
+            }).catch(error => {
+              this.logger.error(`❌ [${customerId}] Error checking existing session:`, error);
+              this.initialize(customerId, false);
+            });
           }
         }, 5000);
       } else if (!shouldReconnect) {
