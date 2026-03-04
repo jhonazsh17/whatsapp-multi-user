@@ -131,7 +131,14 @@ export class WhatsAppMultiUserService {
         // Handle incoming messages
         if (events['messages.upsert']) {
           // TODO: Implement handleIncomingMessages method
-          //console.log(`📨 New messages for session ${customerId}:`, events['messages.upsert']);
+          const messages = events['messages.upsert'];
+          messages.forEach((msg: any) => {
+            const { key, message: { conversation, message } } = msg;
+            const sender = conversation.displayName;
+            const content = message.extendedTextMessage?.contextInfo?.quotedMessage?.message.conversation;
+            const text = message.extendedTextMessage?.text;
+            this.logger.log(`📨 New message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
+          });
         }
 
         // Handle message updates (read receipts, etc.)
