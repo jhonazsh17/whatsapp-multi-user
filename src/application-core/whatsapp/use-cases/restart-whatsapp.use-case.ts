@@ -13,7 +13,8 @@ export class RestartWhatsappUseCase {
         try {
             // Check if existing session exists
             const existingSession = await this.whatsappMultiUserService.getSessionByCustomerId(customerId);
-            
+            console.log('Existing session:', existingSession);
+
             if (!existingSession) {
                 return {
                     success: false,
