@@ -344,35 +344,40 @@ export class WhatsAppMultiUserService {
    * @returns {Promise<any | null>} - Session data or null if not found
    */
   public async getSessionByCustomerId(customerId: string): Promise<any | null> {
-    this.logger.log(`Searching for session with customerId: ${customerId}`);
+    this.logger.log(`🔍 Searching for session with customerId: ${customerId}`);
     
     try {
       // Check if base auth folder exists
       if (!fs.existsSync(this.baseAuthFolderPath)) {
-        this.logger.warn(`Base auth folder ${this.baseAuthFolderPath} does not exist`);
+        this.logger.warn(`❌ Base auth folder ${this.baseAuthFolderPath} does not exist`);
         return null;
       }
+      this.logger.log(`✅ Base auth folder exists: ${this.baseAuthFolderPath}`);
 
       // Build the path to the customer's folder
       const customerFolderPath = path.join(this.baseAuthFolderPath, customerId);
+      this.logger.log(`🔍 Checking customer folder: ${customerFolderPath}`);
       
       // Check if customer folder exists
       if (!fs.existsSync(customerFolderPath)) {
-        this.logger.warn(`Customer folder ${customerId} does not exist`);
+        this.logger.warn(`❌ Customer folder ${customerId} does not exist at ${customerFolderPath}`);
         return null;
       }
+      this.logger.log(`✅ Customer folder exists: ${customerFolderPath}`);
 
       // Read all files in the customer folder
       const files = fs.readdirSync(customerFolderPath);
+      this.logger.log(`📁 Files found in customer folder: ${files.join(', ')}`);
       
       // Look for session files (prioritize creds.json)
       const sessionFiles = files.filter(file => {
         // Look for files that might contain session data
         return file === 'creds.json' || file.includes('session');
       });
+      this.logger.log(`📋 Session files filtered: ${sessionFiles.join(', ')}`);
 
       if (sessionFiles.length === 0) {
-        this.logger.warn(`No session files found in customer folder: ${customerId}`);
+        this.logger.warn(`❌ No session files found in customer folder: ${customerId}`);
         return null;
       }
 
@@ -383,24 +388,32 @@ export class WhatsAppMultiUserService {
       // Prioritize creds.json
       const credsFile = sessionFiles.find(file => file === 'creds.json');
       const filesToCheck = credsFile ? [credsFile] : sessionFiles;
+      this.logger.log(`🎯 Files to check (creds.json prioritized): ${filesToCheck.join(', ')}`);
 
       for (const file of filesToCheck) {
         try {
           const filePath = path.join(customerFolderPath, file);
+          this.logger.log(`📖 Reading file: ${filePath}`);
           const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+          this.logger.log(`📄 File content keys: ${Object.keys(fileContent).join(', ')}`);
           
           // Check if this file contains session data
           if (fileContent && (fileContent.me || fileContent._sessions || fileContent.creds)) {
             sessionData = fileContent;
             foundFile = file;
+            this.logger.log(`✅ Found session data in file: ${file}`);
+            this.logger.log(`🔑 Has 'me': ${!!fileContent.me}, Has '_sessions': ${!!fileContent._sessions}, Has 'creds': ${!!fileContent.creds}`);
             
             // If we found creds.json with 'me', break immediately
             if (file === 'creds.json' && fileContent.me) {
+              this.logger.log(`🎯 Found creds.json with 'me' property - breaking`);
               break;
             }
+          } else {
+            this.logger.log(`⚠️ File ${file} doesn't contain expected session data`);
           }
         } catch (error) {
-          this.logger.warn(`Error reading file ${file}:`, error.message);
+          this.logger.warn(`❌ Error reading file ${file}:`, error.message);
           continue;
         }
       }
