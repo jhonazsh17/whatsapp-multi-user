@@ -205,7 +205,7 @@ export class WhatsAppMultiUserService {
         sessionData.qrShown = false;
         sessionData.sock = null;
         this.logger.log(
-          `🔄 [${customerId}] Reconnecting in ${5000 / 1000} seconds...`
+          `🔄 [${customerId}] Reconnecting in ${10000 / 1000} seconds...`
         );
         setTimeout(() => {
           const currentSession = this.sessions.get(customerId);
@@ -230,7 +230,7 @@ export class WhatsAppMultiUserService {
               this.initialize(customerId, false);
             });
           }
-        }, 5000);
+        }, 10000);
       } else if (!shouldReconnect) {
         this.logger.error(
           `❌ [${customerId}] Session closed (logged out). Cleaning and restarting...`
@@ -394,6 +394,16 @@ export class WhatsAppMultiUserService {
         try {
           const filePath = path.join(customerFolderPath, file);
           this.logger.log(`📖 Reading file: ${filePath}`);
+          
+          // Check file size first
+          const stats = fs.statSync(filePath);
+          this.logger.log(`📏 File size: ${stats.size} bytes`);
+          
+          if (stats.size === 0) {
+            this.logger.warn(`⚠️ File ${file} is empty, skipping...`);
+            continue;
+          }
+          
           const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
           this.logger.log(`📄 File content keys: ${Object.keys(fileContent).join(', ')}`);
           
@@ -414,6 +424,12 @@ export class WhatsAppMultiUserService {
           }
         } catch (error) {
           this.logger.warn(`❌ Error reading file ${file}:`, error.message);
+          
+          // If creds.json fails, try other session files
+          if (file === 'creds.json' && sessionFiles.length > 1) {
+            this.logger.log(`🔄 creds.json failed, trying other session files...`);
+            filesToCheck.push(...sessionFiles.filter(f => f !== 'creds.json'));
+          }
           continue;
         }
       }
