@@ -365,10 +365,10 @@ export class WhatsAppMultiUserService {
       // Read all files in the customer folder
       const files = fs.readdirSync(customerFolderPath);
       
-      // Look for session files (any file containing session data)
+      // Look for session files (prioritize creds.json)
       const sessionFiles = files.filter(file => {
         // Look for files that might contain session data
-        return file.includes('session') || file === 'creds.json';
+        return file === 'creds.json' || file.includes('session');
       });
 
       if (sessionFiles.length === 0) {
@@ -376,20 +376,28 @@ export class WhatsAppMultiUserService {
         return null;
       }
 
-      // Try to read session data from the files
+      // Try to read session data from the files (creds.json first)
       let sessionData: any | null = null;
       let foundFile: string | null = null;
 
-      for (const file of sessionFiles) {
+      // Prioritize creds.json
+      const credsFile = sessionFiles.find(file => file === 'creds.json');
+      const filesToCheck = credsFile ? [credsFile] : sessionFiles;
+
+      for (const file of filesToCheck) {
         try {
           const filePath = path.join(customerFolderPath, file);
           const fileContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
           
           // Check if this file contains session data
-          if (fileContent && (fileContent._sessions || fileContent.me || fileContent.creds)) {
+          if (fileContent && (fileContent.me || fileContent._sessions || fileContent.creds)) {
             sessionData = fileContent;
             foundFile = file;
-            break;
+            
+            // If we found creds.json with 'me', break immediately
+            if (file === 'creds.json' && fileContent.me) {
+              break;
+            }
           }
         } catch (error) {
           this.logger.warn(`Error reading file ${file}:`, error.message);
