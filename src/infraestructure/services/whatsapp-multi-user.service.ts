@@ -137,18 +137,64 @@ export class WhatsAppMultiUserService {
           // Check if messages is an array before forEach
           if (Array.isArray(messages)) {
             messages.forEach((msg: any) => {
-              const { key, message: { conversation, message } } = msg;
-              const sender = conversation?.displayName || 'Unknown';
-              const content = message?.extendedTextMessage?.contextInfo?.quotedMessage?.message?.conversation;
-              const text = message?.extendedTextMessage?.text;
+              this.logger.log(`📨 Message structure:`, JSON.stringify(msg, null, 2));
+              const { key, message, messageStubType, messageStubParameters } = msg;
+              
+              // Get sender info
+              const sender = key?.remoteJid || 'Unknown';
+              
+              // Get message content safely
+              let content = '';
+              let text = '';
+              
+              if (message?.conversation) {
+                content = message.conversation;
+                text = message.conversation;
+              } else if (message?.extendedTextMessage?.text) {
+                content = message.extendedTextMessage.text;
+                text = message.extendedTextMessage.text;
+              } else if (message?.imageMessage?.caption) {
+                content = message.imageMessage.caption;
+                text = '[Image]';
+              } else if (messageStubType) {
+                content = `[System: ${messageStubType}]`;
+                text = `[System: ${messageStubType}]`;
+              } else {
+                content = '[Unsupported message type]';
+                text = '[Unsupported message type]';
+              }
+              
               this.logger.log(`📨 New message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
             });
           } else if (messages) {
             // Handle single message
-            const { key, message: { conversation, message } } = messages;
-            const sender = conversation?.displayName || 'Unknown';
-            const content = message?.extendedTextMessage?.contextInfo?.quotedMessage?.message?.conversation;
-            const text = message?.extendedTextMessage?.text;
+            this.logger.log(`📨 Single message structure:`, JSON.stringify(messages, null, 2));
+            const { key, message, messageStubType, messageStubParameters } = messages;
+            
+            // Get sender info
+            const sender = key?.remoteJid || 'Unknown';
+            
+            // Get message content safely
+            let content = '';
+            let text = '';
+            
+            if (message?.conversation) {
+              content = message.conversation;
+              text = message.conversation;
+            } else if (message?.extendedTextMessage?.text) {
+              content = message.extendedTextMessage.text;
+              text = message.extendedTextMessage.text;
+            } else if (message?.imageMessage?.caption) {
+              content = message.imageMessage.caption;
+              text = '[Image]';
+            } else if (messageStubType) {
+              content = `[System: ${messageStubType}]`;
+              text = `[System: ${messageStubType}]`;
+            } else {
+              content = '[Unsupported message type]';
+              text = '[Unsupported message type]';
+            }
+            
             this.logger.log(`📨 Single message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
           }
         }
