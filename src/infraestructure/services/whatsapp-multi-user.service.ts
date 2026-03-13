@@ -132,13 +132,25 @@ export class WhatsAppMultiUserService {
         if (events['messages.upsert']) {
           // TODO: Implement handleIncomingMessages method
           const messages = events['messages.upsert'];
-          messages.forEach((msg: any) => {
-            const { key, message: { conversation, message } } = msg;
-            const sender = conversation.displayName;
-            const content = message.extendedTextMessage?.contextInfo?.quotedMessage?.message.conversation;
-            const text = message.extendedTextMessage?.text;
-            this.logger.log(`📨 New message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
-          });
+          this.logger.log(`📨 Messages received for session ${customerId}:`, typeof messages, Array.isArray(messages));
+          
+          // Check if messages is an array before forEach
+          if (Array.isArray(messages)) {
+            messages.forEach((msg: any) => {
+              const { key, message: { conversation, message } } = msg;
+              const sender = conversation?.displayName || 'Unknown';
+              const content = message?.extendedTextMessage?.contextInfo?.quotedMessage?.message?.conversation;
+              const text = message?.extendedTextMessage?.text;
+              this.logger.log(`📨 New message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
+            });
+          } else if (messages) {
+            // Handle single message
+            const { key, message: { conversation, message } } = messages;
+            const sender = conversation?.displayName || 'Unknown';
+            const content = message?.extendedTextMessage?.contextInfo?.quotedMessage?.message?.conversation;
+            const text = message?.extendedTextMessage?.text;
+            this.logger.log(`📨 Single message for session ${customerId}: Sender=${sender}, Content=${content}, Text=${text}`);
+          }
         }
 
         // Handle message updates (read receipts, etc.)
