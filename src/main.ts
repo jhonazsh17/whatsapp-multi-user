@@ -50,8 +50,8 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
 
-  await app.listen(process.env.PORT ?? 3003).then(() => {
-    logger.log(`Microservice start on ${process.env.PORT || 3003}`);
+  await app.listen(process.env.PORT ?? 8080, '0.0.0.0').then(() => {
+    logger.log(`Microservice start on ${process.env.PORT || 8080}`);
   });
 }
 bootstrap();
