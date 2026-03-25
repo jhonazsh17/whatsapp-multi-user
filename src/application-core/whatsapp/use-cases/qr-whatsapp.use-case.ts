@@ -1,17 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WhatsAppMultiUserService } from '../../../infraestructure/services/whatsapp-multi-user.service';
+import { WhatsappSessionManagerUseCase } from './whatsapp-session-manager.use-case';
 
 @Injectable()
 export class QrWhatsappUseCase {
     private logger = new Logger(QrWhatsappUseCase.name);
 
     constructor(
-        private readonly whatsappMultiUserService: WhatsAppMultiUserService,
+        private readonly whatsappSessionManagerUseCase: WhatsappSessionManagerUseCase,
     ) { }
 
     async execute(customerId: string): Promise<any> {
         try {
-            const qr = this.whatsappMultiUserService.getQR(customerId);
+            const currentSession = this.whatsappSessionManagerUseCase.getSession(customerId);
+            const qr = currentSession?.qr || null;
+
             return {
                 status: 'success',
                 message: 'QR code generated successfully',

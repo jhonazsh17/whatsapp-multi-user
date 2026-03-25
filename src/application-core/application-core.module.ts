@@ -6,6 +6,9 @@ import { SendMessageWhatsappUseCase } from './whatsapp/use-cases/send-message-wh
 import { QrWhatsappUseCase } from './whatsapp/use-cases/qr-whatsapp.use-case';
 import { CheckingStatusWhatsappUseCase } from './whatsapp/use-cases/checking-status-whatsapp.use-case';
 import { RestartWhatsappUseCase } from './whatsapp/use-cases/restart-whatsapp.use-case';
+import { WhatsappSessionManagerUseCase } from './whatsapp/use-cases/whatsapp-session-manager.use-case';
+import { UnbindWhatsappUseCase } from './whatsapp/use-cases/unbind-whatsapp.use-case';
+import { CancelQrWhatsappUseCase } from './whatsapp/use-cases/cancel-qr-whatsapp.use-case';
 
 const services = [
   InitializeWhatsappUseCase,
@@ -13,6 +16,9 @@ const services = [
   QrWhatsappUseCase,
   CheckingStatusWhatsappUseCase,
   RestartWhatsappUseCase,
+  WhatsappSessionManagerUseCase,
+  UnbindWhatsappUseCase,
+  CancelQrWhatsappUseCase,
 ];
 
 @Module({

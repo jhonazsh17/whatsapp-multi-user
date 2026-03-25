@@ -7,6 +7,8 @@ import { QrWhatsappUseCase } from '../../application-core/whatsapp/use-cases/qr-
 import { SendMessageWhatsappUseCase } from '../../application-core/whatsapp/use-cases/send-message-whatsapp.use-case';
 import { CheckingStatusWhatsappUseCase } from '../../application-core/whatsapp/use-cases/checking-status-whatsapp.use-case';
 import { RestartWhatsappUseCase } from '../../application-core/whatsapp/use-cases/restart-whatsapp.use-case';
+import { UnbindWhatsappUseCase } from '../../application-core/whatsapp/use-cases/unbind-whatsapp.use-case';
+import { CancelQrWhatsappUseCase } from '../../application-core/whatsapp/use-cases/cancel-qr-whatsapp.use-case';
 import { SendMessagePayloadDTO } from '../../application-core/whatsapp/dto/send-message-payload.dto';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import * as fs from 'fs';
@@ -23,6 +25,8 @@ export class WhatsappMultiUserController {
     private readonly sendMessageWhatsappUseCase: SendMessageWhatsappUseCase,
     private readonly checkingStatusWhatsappUseCase: CheckingStatusWhatsappUseCase,
     private readonly restartWhatsappUseCase: RestartWhatsappUseCase,
+    private readonly unbindWhatsappUseCase: UnbindWhatsappUseCase,
+    private readonly cancelQrWhatsappUseCase: CancelQrWhatsappUseCase,
   ) {}
 
   @Post('init')
@@ -68,5 +72,19 @@ export class WhatsappMultiUserController {
   getFiles() {
     const dirPath = path.join(process.cwd(), 'auth_info');
     return fs.readdirSync(dirPath);
+  }
+
+  @Post('unbind')
+  @ApiConsumes('application/json')
+  async unbind(@AuthData() authData: any): Promise<any> {
+    const response = await this.unbindWhatsappUseCase.execute(authData?.customer_id);
+    return response;
+  }
+
+  @Post('cancel-qr')
+  @ApiConsumes('application/json')
+  async cancelQr(@AuthData() authData: any): Promise<any> {
+    const response = await this.cancelQrWhatsappUseCase.execute(authData?.customer_id);
+    return response;
   }
 }

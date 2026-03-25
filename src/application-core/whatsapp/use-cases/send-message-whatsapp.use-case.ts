@@ -1,17 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import logger from '@whiskeysockets/baileys/lib/Utils/logger';
 import { formatNumber } from '../../../helpers/utils';
-import { WhatsAppMultiUserService } from 'src/infraestructure/services/whatsapp-multi-user.service';
-import { RestartWhatsappUseCase } from './restart-whatsapp.use-case';
 import { SendMessagePayloadDTO } from '../dto/send-message-payload.dto';
+import { WhatsappSessionManagerUseCase, SessionData } from './whatsapp-session-manager.use-case';
+import { PublisherService } from '../../../infraestructure/services/publisher.service';
 
 @Injectable()
 export class SendMessageWhatsappUseCase {
     private logger = new Logger(SendMessageWhatsappUseCase.name);
 
     constructor(
-        private readonly whatsappMultiUserService: WhatsAppMultiUserService,
-        private readonly restartWhatsappUseCase: RestartWhatsappUseCase,
+        private readonly whatsappSessionManagerUseCase: WhatsappSessionManagerUseCase,
+        private readonly publisherService: PublisherService,
     ) { }
 
     async execute(
@@ -20,38 +19,51 @@ export class SendMessageWhatsappUseCase {
     ): Promise<any> {
         try {
             const { phoneNumber, pdfUrl, caption, filename, message } = payload;
+
             if (!phoneNumber || !pdfUrl) {
                 throw new Error('Missing phoneNumber or pdfUrl');
             }
 
-            const sock = this.whatsappMultiUserService.getSocket(customerId);
-            if (!sock) {
-                this.restartWhatsappUseCase.execute(customerId);
+            this.logger.log('Getting session for customer: ' + customerId);
+            const currentSession = this.whatsappSessionManagerUseCase.getSession(customerId);
+
+            if (!currentSession) {
+                throw new Error('Session not found');
             }
 
-            const number = formatNumber(phoneNumber) || '';
-            const exists = await this.whatsappMultiUserService.numberExistsOnWhatsApp(customerId, number);
+            if (!currentSession.isConnected) {
+                // TODO: Implementar lógica para reconectar sesión
+            }
 
-            if (!exists) {
-                logger.warn(`❌ Número no encontrado en WhatsApp: ${number}`);
+            const formattedPhoneNumber = formatNumber(phoneNumber) || '';
+
+            this.logger.log('Checking if number exists in WhatsApp: ' + formattedPhoneNumber);
+            const existsJid = await currentSession.sock?.onWhatsApp(formattedPhoneNumber);
+
+            if (!existsJid || existsJid.length === 0) {
                 throw new Error('The number does not exist in WhatsApp');
             }
 
-            await this.whatsappMultiUserService.sendMessage(customerId, number, {
+            const contentMessage = {
                 document: { url: pdfUrl },
                 message: message || 'Aquí tienes tu documento.',
                 caption: caption || 'Aquí tienes tu documento.',
                 mimetype: 'application/pdf',
                 fileName: filename || 'documento.pdf',
-            });
-            logger.info(`✅ Mensaje enviado vía API a ${number}`);
+            }
 
+            this.publisherService.sendMessage(contentMessage);
+
+            this.logger.log('Sending message to ' + formattedPhoneNumber);
+            currentSession.sock.sendMessage(formattedPhoneNumber, contentMessage);
+
+            this.logger.log(`Message sent successfully to ${formattedPhoneNumber}`);
             return {
                 status: 'success',
                 message: 'Message sent successfully',
             };
         } catch (error: any) {
-            console.log('Error in SendMessageWhatsappUseCase:', error);
+            this.logger.error('Error in SendMessageWhatsappUseCase:', error);
             return {
                 status: 'error',
                 message: 'An error occurred while processing your request.',
@@ -59,3 +71,4 @@ export class SendMessageWhatsappUseCase {
         }
     }
 }
+

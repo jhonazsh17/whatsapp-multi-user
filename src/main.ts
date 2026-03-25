@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { Transport } from '@nestjs/microservices';
 
 async function bootstrap() {
   const logger = new Logger('main');
@@ -36,8 +37,21 @@ async function bootstrap() {
     })
   );
 
+  app.connectMicroservice({
+    transport: Transport.RMQ,
+    options: {
+      urls: [process.env.RABBITMQ_URL],
+      queue: 'whatsapp_queue',
+      queueOptions: {
+        durable: true,
+      },
+    },
+  });
+
+  await app.startAllMicroservices();
+
   await app.listen(process.env.PORT ?? 3003).then(() => {
-		logger.log(`Microservice start on ${process.env.PORT || 3003}`);
-	});
+    logger.log(`Microservice start on ${process.env.PORT || 3003}`);
+  });
 }
 bootstrap();

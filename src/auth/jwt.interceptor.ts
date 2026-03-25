@@ -1,4 +1,4 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, UnauthorizedException } from '@nestjs/common';
 import { Observable } from 'rxjs';
 
 @Injectable()
@@ -30,8 +30,7 @@ export class JwtInterceptor implements NestInterceptor {
       }
       
       if (!jwtToken) {
-        console.log('❌ No JWT token found in headers');
-        return null;
+        throw new UnauthorizedException('No JWT token found in headers');
       }
       
       // Añadir padding si es necesario
@@ -41,8 +40,7 @@ export class JwtInterceptor implements NestInterceptor {
       const payload = JSON.parse(payloadJson);      
       return payload;
     } catch (error) {
-      console.log('❌ Error extracting auth data:', error.message);
-      return null;
+      throw new UnauthorizedException(`Invalid JWT token: ${error.message}`);
     }
   }
 }

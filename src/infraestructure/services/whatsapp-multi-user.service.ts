@@ -4,6 +4,7 @@ import { Boom } from '@hapi/boom'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as QRCode from 'qrcode'
+import { EventEmitter } from 'events';
 
 interface SessionData {
   sock: any;
@@ -32,6 +33,7 @@ export class WhatsAppMultiUserService {
   private readonly logger = new Logger(WhatsAppMultiUserService.name);
   private sessions: Map<string, SessionData> = new Map();
   private baseAuthFolderPath = 'auth_info';
+  private eventEmitter = new EventEmitter();
 
   constructor() {}
 
@@ -241,6 +243,12 @@ export class WhatsAppMultiUserService {
       this.logger.log(`📱 [${customerId}] Scan this QR code with WhatsApp.`);
       sessionData.qr = await QRCode.toDataURL(qr);
 
+      // Emit QR event to frontend
+      this.eventEmitter.emit('whatsapp_qr_generated', {
+        customerId,
+        qr: sessionData.qr
+      });
+
       // Reset flag after 30 seconds (in case scan fails)
       setTimeout(() => {
         const currentSession = this.sessions.get(customerId);
@@ -320,9 +328,24 @@ export class WhatsAppMultiUserService {
       sessionData.isConnected = true;
       this.logger.log(`✅ [${customerId}] Bot connected successfully as: ${sessionData.sock?.user?.id}`);  
       this.logger.log(`📱 [${customerId}] Name: ${sessionData.sock?.user?.name || 'No name'}`);
+      
+      // Emit ready event to frontend (QR was scanned successfully)
+      this.eventEmitter.emit('whatsapp_connected', {
+        customerId,
+        user: sessionData.sock?.user,
+        message: 'WhatsApp connected successfully - QR scanned'
+      });
     } else if (connection === 'connecting') {
       this.logger.log(`🔌 [${customerId}] Connecting to WhatsApp...`);
     }
+  }
+
+  /**
+   * Get event emitter to listen for WhatsApp events
+   * @returns {EventEmitter} - Event emitter instance
+   */
+  getEventEmitter(): EventEmitter {
+    return this.eventEmitter;
   }
 
   /**
